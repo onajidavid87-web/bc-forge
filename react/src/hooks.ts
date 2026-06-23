@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useBcForgeClient } from './context';
+import { useBcForgeClient, useBcForgeVestingClient } from './context';
 import { Keypair } from '@stellar/stellar-sdk';
 
 /**
@@ -221,4 +221,228 @@ export function useAllowance(owner: string | undefined, spender: string | undefi
   }, [fetchAllowance]);
 
   return { data, loading, error, refetch: fetchAllowance };
+}
+
+// ─── Lockup Hooks ─────────────────────────────────────────────────────────────
+
+/**
+ * Hook to fetch the locked token balance for an address.
+ */
+export function useLockedBalance(address: string | undefined) {
+  const client = useBcForgeClient();
+  const [data, setData] = useState<bigint | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchLocked = useCallback(async () => {
+    if (!address) return;
+    try {
+      setLoading(true);
+      const amount = await client.getLockedAmount(address);
+      setData(amount);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setLoading(false);
+    }
+  }, [client, address]);
+
+  useEffect(() => {
+    fetchLocked();
+  }, [fetchLocked]);
+
+  return { data, loading, error, refetch: fetchLocked };
+}
+
+/**
+ * Hook to fetch the full lockup info (amount + unlock_time) for an address.
+ */
+export function useLockupInfo(address: string | undefined) {
+  const client = useBcForgeClient();
+  const [data, setData] = useState<{ amount: bigint; unlock_time: bigint } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchInfo = useCallback(async () => {
+    if (!address) return;
+    try {
+      setLoading(true);
+      const info = await client.getLockupInfo(address);
+      setData(info);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setLoading(false);
+    }
+  }, [client, address]);
+
+  useEffect(() => {
+    fetchInfo();
+  }, [fetchInfo]);
+
+  return { data, loading, error, refetch: fetchInfo };
+}
+
+/**
+ * Hook to perform lock token operations.
+ */
+export function useLockTokens() {
+  const client = useBcForgeClient();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const lock = useCallback(async (user: string, amount: bigint, unlockTime: bigint, source: Keypair) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await client.lockTokens(user, amount, unlockTime, source);
+      return result;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [client]);
+
+  return { lock, loading, error };
+}
+
+/**
+ * Hook to withdraw matured locked tokens.
+ */
+export function useWithdrawLocked() {
+  const client = useBcForgeClient();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const withdraw = useCallback(async (user: string, source: Keypair) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await client.withdrawLocked(user, source);
+      return result;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [client]);
+
+  return { withdraw, loading, error };
+}
+
+// ─── Vesting Hooks ────────────────────────────────────────────────────────────
+
+/**
+ * Hook to fetch vesting schedules for a beneficiary address.
+ */
+export function useVestingSchedules(address: string | undefined) {
+  const client = useBcForgeVestingClient();
+  const [data, setData] = useState<any[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchSchedules = useCallback(async () => {
+    if (!address) return;
+    try {
+      setLoading(true);
+      const schedules = await client.getVestingInfo(address);
+      setData(schedules);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setLoading(false);
+    }
+  }, [client, address]);
+
+  useEffect(() => {
+    fetchSchedules();
+  }, [fetchSchedules]);
+
+  return { data, loading, error, refetch: fetchSchedules };
+}
+
+/**
+ * Hook to create a new vesting schedule.
+ */
+export function useCreateVesting() {
+  const client = useBcForgeVestingClient();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const create = useCallback(
+    async (beneficiary: string, amount: bigint, cliff: number, duration: number, revocable: boolean, source: Keypair) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const result = await client.createVesting(beneficiary, amount, cliff, duration, revocable, source);
+        return result;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        setError(error);
+        throw error;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [client],
+  );
+
+  return { create, loading, error };
+}
+
+/**
+ * Hook to release vested tokens for a beneficiary.
+ */
+export function useRelease() {
+  const client = useBcForgeVestingClient();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const release = useCallback(async (beneficiary: string, source: Keypair) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await client.release(beneficiary, source);
+      return result;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [client]);
+
+  return { release, loading, error };
+}
+
+/**
+ * Hook to revoke a vesting schedule.
+ */
+export function useRevokeVesting() {
+  const client = useBcForgeVestingClient();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const revoke = useCallback(async (scheduleId: number, source: Keypair) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await client.revoke(scheduleId, source);
+      return result;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [client]);
+
+  return { revoke, loading, error };
 }

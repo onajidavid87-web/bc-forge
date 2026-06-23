@@ -20,6 +20,8 @@
 
 export { bcForgeClient, Role } from './client';
 export type { BatchMintRecipient, bcForgeClientConfig, TransactionResult } from './client';
+export { VestingClient } from './vestingClient';
+export type { VestingClientConfig, VestingSchedule, VestingInfo } from './vestingClient';
 export { buildInvokeTransaction, submitTransaction, scValToNative } from './utils';
 export { bcForgeEventType, decodeEvent, decodeDiagnosticEvent, subscribeEvents } from './events';
 export type { bcForgeEvent, SubscriptionOptions } from './events';

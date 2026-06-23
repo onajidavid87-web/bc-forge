@@ -914,6 +914,37 @@ export class bcForgeClient {
     return this.invokeContract('withdraw_locked', [addressToScVal(user)], source);
   }
 
+  /**
+   * Query the locked token balance for a user.
+   * Returns 0 if no lock exists.
+   */
+  async getLockedAmount(address: string): Promise<bigint> {
+    try {
+      const result = await this.queryContract('get_locked_amount', [addressToScVal(address)]);
+      return BigInt(scValToNative(result));
+    } catch {
+      return 0n;
+    }
+  }
+
+  /**
+   * Query the full lockup info (amount + unlock time) for a user.
+   * Returns null if no lock exists.
+   */
+  async getLockupInfo(address: string): Promise<{ amount: bigint; unlock_time: bigint } | null> {
+    try {
+      const result = await this.queryContract('read_lockup', [addressToScVal(address)]);
+      const raw = scValToNative(result);
+      if (!raw) return null;
+      return {
+        amount: BigInt(raw.amount),
+        unlock_time: BigInt(raw.unlock_time),
+      };
+    } catch {
+      return null;
+    }
+  }
+
   // ─── Events ──────────────────────────────────────────────────────────────
 
   /**
