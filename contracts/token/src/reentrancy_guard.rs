@@ -81,7 +81,7 @@ macro_rules! reentrancy_guard {
         let guard =
             $crate::reentrancy_guard::ReentrancyGuard::new(soroban_sdk::Symbol::new($env, $key));
         guard.require_not_entered($env);
-        let result = (|| $body)();
+        let result = { $body };
         guard.exit($env);
         result
     }};

@@ -1,4 +1,4 @@
-import { SorobanRpc, xdr, scValToNative } from '@stellar/stellar-sdk';
+import { Soroban, xdr, scValToNative } from '@stellar/stellar-sdk';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 
@@ -13,7 +13,7 @@ if (!CONTRACT_ID) {
   throw new Error('CONTRACT_ID environment variable is required');
 }
 
-const server = new SorobanRpc.Server(RPC_URL);
+const server = new Soroban.Server(RPC_URL);
 
 /**
  * Main indexer loop to fetch and process Soroban events.
@@ -71,7 +71,7 @@ export async function runIndexer() {
   }
 }
 
-async function processEvent(event: SorobanRpc.Api.RawEventResponse) {
+async function processEvent(event: Soroban.Api.RawEventResponse) {
   const topic = scValToNative(event.topic[0]);
   const data = event.value;
 

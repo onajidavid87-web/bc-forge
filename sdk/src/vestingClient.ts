@@ -1,5 +1,5 @@
 import {
-  SorobanRpc,
+  rpc,
   Contract,
   TransactionBuilder,
   Keypair,
@@ -54,7 +54,7 @@ export class VestingClient {
   private rpcUrl: string;
   private networkPassphrase: string;
   private contractId: string;
-  private server: SorobanRpc.Server;
+  private server: rpc.Server;
   private contract: Contract;
   private walletAdapter?: WalletAdapter;
 
@@ -62,7 +62,7 @@ export class VestingClient {
     this.rpcUrl = config.rpcUrl;
     this.networkPassphrase = config.networkPassphrase;
     this.contractId = config.contractId;
-    this.server = new SorobanRpc.Server(this.rpcUrl);
+    this.server = new rpc.Server(this.rpcUrl);
     this.contract = new Contract(this.contractId);
     this.walletAdapter = config.walletAdapter;
   }
@@ -152,7 +152,7 @@ export class VestingClient {
 
   async pollEvents(cursor?: string): Promise<{ events: any[]; cursor: string }> {
     const response = await this.server.getEvents({
-      cursor,
+      cursor: cursor ?? '',
       filters: [{ contractIds: [this.contractId], type: 'contract' }],
     });
     return {
@@ -194,11 +194,11 @@ export class VestingClient {
 
         const simulated = await this.server.simulateTransaction(tx);
 
-        if (SorobanRpc.Api.isSimulationError(simulated)) {
+        if (rpc.Api.isSimulationError(simulated)) {
           throw new SimulationError(`Query failed: ${simulated.error}`, simulated.error);
         }
 
-        if (!SorobanRpc.Api.isSimulationSuccess(simulated) || !simulated.result) {
+        if (!rpc.Api.isSimulationSuccess(simulated) || !simulated.result) {
           throw new SimulationError('Query returned no result');
         }
 
@@ -229,7 +229,7 @@ export class VestingClient {
 
           const response = await submitTransaction(this.rpcUrl, txXdr);
 
-          if (response.status === SorobanRpc.Api.GetTransactionStatus.SUCCESS) {
+          if (response.status === rpc.Api.GetTransactionStatus.SUCCESS) {
             return {
               success: true,
               hash: (response as any).hash,
@@ -260,7 +260,7 @@ export class VestingClient {
 
         const response = await submitTransaction(this.rpcUrl, signedXdr);
 
-        if (response.status === SorobanRpc.Api.GetTransactionStatus.SUCCESS) {
+        if (response.status === rpc.Api.GetTransactionStatus.SUCCESS) {
           return {
             success: true,
             hash: (response as any).hash,
